@@ -50,7 +50,7 @@ jobs:
           fi
 
       - name: Change working directory for node
-        run: cd /wbdcps
+        run: cd ${{ github.workspace }}/wbdcps
           
       - name: Setup Node
         uses: actions/setup-node@v4
