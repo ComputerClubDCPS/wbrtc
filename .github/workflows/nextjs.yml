@@ -60,28 +60,21 @@ jobs:
           # server side image optimization (https://nextjs.org/docs/api-reference/next/image#unoptimized).
           #
           # You may remove this line if you want to manage the configuration yourself.
-          base_path: '/wbdcps'
-      - name: Restore cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            .next/cache
-          # In order to improve reliability of the cache, you may want to specify a scope when caching dependencies:
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/wbdcps/package-lock.json', '**/wbdcps/yarn.lock') }}-${{ hashFiles('**/wbdcps/next.config.js', '**/wbdcps/postcss.config.js', '**/.babelrc.json') }}
+          base_path: '' # or your desired base path
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.runner }} ${{ steps.detect-package-manager.outputs.command }}
-        working-directory: /github/workspace/wbdcps
+        working-directory: ./wbdcps
       - name: Build with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next build
-        working-directory: /github/workspace/wbdcps
-      - name: Export with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next export
-        working-directory: /github/workspace/wbdcps
+        run: npm run build
+        working-directory: ./wbdcps
+      - name: Static HTML export
+        run: npm run export
+        working-directory: ./wbdcps
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          # Upload entire static directory
-          path: /github/workspace/wbdcps/out
+          # Upload entire static site
+          path: ./wbdcps/out
 
   # Deployment job
   deploy:
