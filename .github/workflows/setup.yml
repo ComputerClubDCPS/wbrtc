@@ -1,4 +1,4 @@
-name: Setup next + libp2p
+name: Create Next.js App and Transfer Contents (Manual)
 
 on:
   workflow_dispatch:
@@ -12,6 +12,10 @@ on:
           - info
           - warning
           - debug
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: false
 
 jobs:
   build:
@@ -28,14 +32,14 @@ jobs:
       - name: Create Next.js app
         run: npx create-next-app@latest wbrtc
 
-      - name: Install libp2p
-        run: npm install npm install libp2p @chainsafe/libp2p-gossipsub @libp2p/websockets @libp2p/tcp @libp2p/mplex @libp2p/noise it-length-prefixed it-pushable it-pipe it-ws @libp2p/bootstrap
+      - name: Install librtc
+        run: npm install libp2p @chainsafe/libp2p-gossipsub @libp2p/websockets @libp2p/websockets @libp2p/tcp @libp2p/mplex @libp2p/noise it-length-prefixed it-pushable it-pipe it-ws @libp2p/bootstrap
 
-      - name: Transfer Contents to Root
+      - name: Transfer Contents to Root (excluding node_modules)
         run: |
           cd wbrtc
           shopt -s dotglob
-          mv * ..
+          find . ! -path "./node_modules" -maxdepth 1 -exec mv {} .. \;
           cd ..
           rm -rf wbrtc
 
