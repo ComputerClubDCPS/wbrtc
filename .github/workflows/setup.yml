@@ -28,8 +28,8 @@ jobs:
       - name: Create Next.js app
         run: npx create-next-app@latest wbrtc
 
-      - name: Install librtc
-        run: npm install librtc
+      - name: Install libp2p
+        run: npm install libp2p
 
       - name: Transfer Contents to Root
         run: |
