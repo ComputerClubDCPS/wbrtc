@@ -69,6 +69,8 @@ jobs:
           #
           # You may remove this line if you want to manage the configuration yourself.
           base_path: '' # or your desired base path
+      - name: PreInstall Dependencies
+        run: npm ci
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.runner }} ${{ steps.detect-package-manager.outputs.command }} -y
         working-directory: ./wbdcps
