@@ -70,7 +70,7 @@ jobs:
           # You may remove this line if you want to manage the configuration yourself.
           base_path: '' # or your desired base path
       - name: Install dependencies
-        run: ${{ steps.detect-package-manager.outputs.runner }} ${{ steps.detect-package-manager.outputs.command }}
+        run: ${{ steps.detect-package-manager.outputs.runner }} ${{ steps.detect-package-manager.outputs.command }} -y
         working-directory: ./wbdcps
       - name: Build with Next.js
         run: npm run build
