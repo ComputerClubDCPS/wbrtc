@@ -1,0 +1,52 @@
+name: Create Next.js App and Transfer Contents (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'info'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Create Next.js app
+        run: npx create-next-app@latest wbrtc
+
+      - name: Install librtc
+        run: npm install librtc
+
+      - name: Transfer Contents to Root
+        run: |
+          cd wbrtc
+          shopt -s dotglob
+          mv * ..
+          cd ..
+          rm -rf wbrtc
+
+      - name: Commit changes
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "Transfer Next.js app contents to root"
+          git push origin HEAD:main
