@@ -29,7 +29,7 @@ jobs:
         run: npx create-next-app@latest wbrtc
 
       - name: Install libp2p
-        run: npm install libp2p
+        run: npm install npm install libp2p @libp2p/gossipsub @libp2p/websockets @libp2p/websockets @libp2p/tcp @libp2p/mplex @libp2p/noise it-length-prefixed it-pushable it-pipe it-ws @libp2p/bootstrap
 
       - name: Transfer Contents to Root
         run: |
