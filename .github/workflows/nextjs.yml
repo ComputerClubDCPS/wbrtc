@@ -60,25 +60,28 @@ jobs:
           # server side image optimization (https://nextjs.org/docs/api-reference/next/image#unoptimized).
           #
           # You may remove this line if you want to manage the configuration yourself.
-          static_site_generator: next
+          base_path: '/wbdcps'
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: |
             .next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
+          # In order to improve reliability of the cache, you may want to specify a scope when caching dependencies:
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/wbdcps/package-lock.json', '**/wbdcps/yarn.lock') }}-${{ hashFiles('**/wbdcps/next.config.js', '**/wbdcps/postcss.config.js', '**/.babelrc.json') }}
       - name: Install dependencies
-        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+        run: ${{ steps.detect-package-manager.outputs.runner }} ${{ steps.detect-package-manager.outputs.command }}
+        working-directory: /github/workspace/wbdcps
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        working-directory: /github/workspace/wbdcps
+      - name: Export with Next.js
+        run: ${{ steps.detect-package-manager.outputs.runner }} next export
+        working-directory: /github/workspace/wbdcps
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v2
         with:
-          path: ./out
+          # Upload entire static directory
+          path: /github/workspace/wbdcps/out
 
   # Deployment job
   deploy:
@@ -90,4 +93,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v3
