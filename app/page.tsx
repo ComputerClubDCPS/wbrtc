@@ -1,99 +1,146 @@
-import Image from "next/image";
-import dynamic from 'next/dynamic';
+'use client';
 
-// Load client-side only to avoid SSR issues
-const Libp2pChat = dynamic(() => import('../components/Libp2pChat'), { ssr: false });
+import React, { useEffect, useState, useRef, KeyboardEvent } from 'react';
+import Libp2p from 'libp2p';
+import { WebSockets } from '@libp2p/websockets';
+import { Mplex } from '@libp2p/mplex';
+import { Noise } from '@chainsafe/libp2p-noise';
+import { gossipsub, GossipsubEvents, Message as GossipsubMessage } from '@chainsafe/libp2p-gossipsub';
+import { bootstrap } from '@libp2p/bootstrap';
 
-export default function Home() {
+const TOPIC = 'libp2p-group-chat';
+
+type ChatMessage = {
+  from: string;
+  text: string;
+};
+
+export default function Libp2pChat(): JSX.Element {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const libp2pRef = useRef<Libp2p | null>(null);
+
+  useEffect(() => {
+    async function startLibp2p() {
+      try {
+        const node = await Libp2p.create({
+          transports: [new WebSockets()],
+          streamMuxers: [new Mplex()],
+          connectionEncryption: [new Noise()],
+          pubsub: gossipsub(),
+          peerDiscovery: [
+            bootstrap({
+              list: [
+                '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+                '/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+              ],
+            }),
+          ],
+        });
+
+        await node.start();
+        console.log('Libp2p started with id:', node.peerId.toString());
+
+        node.pubsub.addEventListener('message', (evt: GossipsubEvents.Message) => {
+          const msg: GossipsubMessage = evt.detail;
+          const text = new TextDecoder().decode(msg.data);
+
+          if (msg.from !== node.peerId.toString()) {
+            setMessages((msgs) => [...msgs, { from: msg.from, text }]);
+          }
+        });
+
+        await node.pubsub.subscribe(TOPIC);
+        libp2pRef.current = node;
+      } catch (err) {
+        console.error('Failed to start libp2p', err);
+      }
+    }
+
+    startLibp2p();
+
+    return () => {
+      if (libp2pRef.current) {
+        libp2pRef.current.stop();
+      }
+    };
+  }, []);
+
+  async function sendMessage() {
+    if (!libp2pRef.current || !input.trim()) return;
+    const msg = input.trim();
+
+    try {
+      await libp2pRef.current.pubsub.publish(TOPIC, new TextEncoder().encode(msg));
+      setMessages((msgs) => [...msgs, { from: 'Me', text: msg }]);
+      setInput('');
+    } catch (err) {
+      console.error('Send error:', err);
+    }
+  }
+
+  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
   return (
-        <Libp2pChat />
-
-    
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            i like jess - fraser
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main style={{ maxWidth: 600, margin: '40px auto', fontFamily: 'Arial, sans-serif' }}>
+      <h1>libp2p Gossipsub Group Chat (TS)</h1>
+      <div
+        style={{
+          height: 300,
+          border: '1px solid #ccc',
+          padding: 10,
+          marginBottom: 10,
+          overflowY: 'auto',
+          backgroundColor: '#fafafa',
+          borderRadius: 6,
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+        }}
+      >
+        {messages.map(({ from, text }, i) => (
+          <div
+            key={i}
+            style={{
+              margin: '6px 0',
+              color: from === 'Me' ? 'blue' : 'black',
+              fontWeight: from === 'Me' ? 'bold' : 'normal',
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+            <b>{from === 'Me' ? 'Me' : from.slice(0, 6)}:</b> {text}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          type="text"
+          placeholder="Type your message..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
+          aria-label="Chat message input"
+        />
+        <button
+          type="button"
+          onClick={sendMessage}
+          style={{
+            padding: '10px 16px',
+            borderRadius: 6,
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          aria-label="Send chat message"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          Send
+        </button>
+      </div>
+    </main>
   );
 }
